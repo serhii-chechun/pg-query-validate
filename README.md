@@ -46,28 +46,56 @@ This makes `pgqv` straightforward to wire into a pre-commit hook or CI step.
 
 ## Installation
 
+### Homebrew (macOS and Linux)
+
+The formula is hosted in this repository, so there is no separate
+`homebrew-tap` repository to add:
+
+```console
+$ brew tap serhii-chechun/pg-query-validate https://github.com/serhii-chechun/pg-query-validate
+$ brew install pgqv
+```
+
+Tapping the main repository is what lets Homebrew find `Formula/pgqv.rb`. If the
+short name is ambiguous, use the fully qualified form:
+`brew install serhii-chechun/pg-query-validate/pgqv`. Remove the tap with
+`brew untap serhii-chechun/pg-query-validate`.
+
+The formula installs the prebuilt release binary for your platform, so no
+compiler is needed.
+
 ### Prebuilt binaries
 
-Prebuilt binaries are attached to each
+Prebuilt archives are attached to each
 [release](https://github.com/serhii-chechun/pg-query-validate/releases/latest).
 They need no compiler and no other dependencies.
 
-1. Open the Releases page and download the archive for your operating system and
-   architecture (macOS or Linux, `amd64` or `arm64`).
-2. Extract the archive and put the binary on your `PATH`:
+| Platform | Archive |
+| --- | --- |
+| macOS, Apple Silicon | `pgqv_1.0.0_darwin_arm64.tar.gz` |
+| macOS, Intel | `pgqv_1.0.0_darwin_amd64.tar.gz` |
+| Linux, x86-64 | `pgqv_1.0.0_linux_amd64.tar.gz` |
+| Linux, arm64 | `pgqv_1.0.0_linux_arm64.tar.gz` |
+| Windows, x86-64 | `pgqv_1.0.0_windows_amd64.zip` |
 
-   ```console
-   $ tar -xzf <downloaded-archive>
-   $ sudo install -m 755 pgqv /usr/local/bin/pgqv
-   ```
+Checksums for every archive are published alongside them in `SHA256SUMS`.
 
-3. Confirm it runs:
+**macOS and Linux**
 
-   ```console
-   $ pgqv
-   PostgreSQL Query Validator v1.0 (c) 2026, Serhii Chechun
-   Usage: pgqv <filename.sql>
-   ```
+```console
+$ tar -xzf pgqv_1.0.0_linux_amd64.tar.gz
+$ sudo install -m 755 pgqv /usr/local/bin/pgqv
+```
+
+**Windows** — extract the `.zip` and put `pgqv.exe` on your `PATH`.
+
+Confirm it runs:
+
+```console
+$ pgqv
+PostgreSQL Query Validator v1.0 (c) 2026, Serhii Chechun
+Usage: pgqv <filename.sql>
+```
 
 On macOS you may need to allow the unsigned binary under
 *System Settings -> Privacy & Security* the first time you run it. Building from
@@ -111,6 +139,10 @@ The resulting binary is self-contained: it links only against the system C
 library, and needs no PostgreSQL installation or `libpg_query` at runtime.
 Prebuilt release binaries therefore also run on machines without a compiler.
 
+The Linux binaries are dynamically linked against glibc, so they run on any
+reasonably recent glibc distribution but not on musl-based systems such as
+Alpine. Build from source there instead.
+
 ## Limitations
 
 - **PostgreSQL 17 grammar.** Parsing uses libpg_query 17 (via
@@ -130,6 +162,17 @@ go test ./...
 gofmt -l ./cmd ./internal
 go vet ./...
 ```
+
+To build the release archives locally, run:
+
+```console
+./scripts/build-release.sh
+```
+
+The macOS archives are built natively and the Linux and Windows ones inside a
+container, so docker or podman must be installed. Archives and `SHA256SUMS` are
+written to `dist/`. Tagged pushes build and publish the same archives through
+[`.github/workflows/release.yml`](.github/workflows/release.yml).
 
 ## License
 

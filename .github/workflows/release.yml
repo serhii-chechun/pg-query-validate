@@ -1,0 +1,104 @@
+name: Release
+
+# Builds the pgqv binaries for macOS, Linux and Windows and attaches them to the
+# GitHub release for the pushed tag.
+#
+# Each target is built natively on a matching runner, except linux/arm64 which
+# is cross-compiled on the amd64 runner. Native builds avoid the cross-toolchain
+# setup that a local build needs (see scripts/build-release.sh).
+#
+# Note: if the Windows build fails to link with
+# "undefined reference to __stack_chk_fail", add CGO_LDFLAGS: "-lssp" to the
+# build step's env block.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.goos }}/${{ matrix.goarch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, goos: linux, goarch: amd64, cc: gcc, apt: "" }
+          - { os: ubuntu-latest, goos: linux, goarch: arm64, cc: aarch64-linux-gnu-gcc, apt: gcc-aarch64-linux-gnu }
+          - { os: macos-latest, goos: darwin, goarch: arm64, cc: clang, apt: "" }
+          - { os: macos-latest, goos: darwin, goarch: amd64, cc: clang, apt: "" }
+          - { os: windows-latest, goos: windows, goarch: amd64, cc: gcc, apt: "" }
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install C toolchain
+        if: matrix.apt != ''
+        run: sudo apt-get update && sudo apt-get install -y ${{ matrix.apt }}
+
+      - name: Build
+        shell: bash
+        env:
+          CGO_ENABLED: "1"
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CC: ${{ matrix.cc }}
+        run: |
+          set -euo pipefail
+          ext=""
+          if [ "$GOOS" = "windows" ]; then ext=".exe"; fi
+          go build -trimpath -ldflags "-s -w" -o "pgqv${ext}" ./cmd/pgqv
+
+      - name: Package
+        shell: bash
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          set -euo pipefail
+          base="pgqv_${GITHUB_REF_NAME#v}_${GOOS}_${GOARCH}"
+          if [ "$GOOS" = "windows" ]; then
+            7z a -tzip "${base}.zip" pgqv.exe > /dev/null
+          else
+            tar -czf "${base}.tar.gz" pgqv
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pgqv-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: |
+            pgqv_*.tar.gz
+            pgqv_*.zip
+          if-no-files-found: ignore
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: |
+          set -euo pipefail
+          cd dist
+          sha256sum pgqv_* > SHA256SUMS
+          cat SHA256SUMS
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/pgqv_*
+            dist/SHA256SUMS
+          generate_release_notes: true
