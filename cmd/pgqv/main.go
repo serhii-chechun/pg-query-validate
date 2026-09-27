@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/serhii-chechun/pg-query-validate/internal/validate"
@@ -20,12 +19,7 @@ Usage: pgqv <filename.sql>
 		os.Exit(1)
 	}
 
-	var (
-		reader io.Reader = os.Stdin
-		name             = os.Args[1]
-	)
-
-	file, err := os.Open(name)
+	file, err := os.Open(os.Args[1])
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error opening file: %v\n", err)
 		os.Exit(1)
@@ -36,9 +30,8 @@ Usage: pgqv <filename.sql>
 			fmt.Fprintf(os.Stderr, "Error closing file: %v\n", err)
 		}
 	}()
-	reader = file
 
-	if err := validate.Process(name, reader); err != nil {
+	if err := validate.Process(os.Args[1], file); err != nil {
 		if _, ok := errors.AsType[*validate.Error](err); !ok {
 			fmt.Fprintf(os.Stderr, "Processing issue: %v\n", err)
 		}
