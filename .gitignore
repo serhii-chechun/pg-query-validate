@@ -33,3 +33,4 @@ go.work.sum
 
 # Release artifacts produced by scripts/build-release.sh
 dist/
+.DS_Store
