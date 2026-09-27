@@ -1,2 +1,136 @@
 # pg-query-validate
-Standalone Query Validator/Linter for PostgreSQL
+
+`pgqv` is a standalone query validator and linter for PostgreSQL. Point it at a
+`.sql` file and it reports problems with rustc-style diagnostics: the offending
+line, a `file:line:column` location, and a caret underline.
+
+It works entirely offline - no PostgreSQL server, no database connection.
+
+```console
+$ pgqv schema.sql
+error: unknown type "varchat" (did you mean "varchar"?)
+ --> schema.sql:3:22
+  |
+3 |     name             VARCHAT(255) NOT NULL,
+  |                      ^^^^^^^
+```
+
+## What it checks
+
+- **Syntax.** The file is parsed with the PostgreSQL grammar. Anything that does
+  not parse is reported with its location.
+- **Misspelled type names.** PostgreSQL accepts *any* identifier as a type name
+  and only resolves it when the statement runs, so `VARCHAT(255)` is valid
+  syntax but fails on a real server. `pgqv` flags unqualified type names that
+  are one edit away from a built-in type (`varchat` -> `varchar`), which catches
+  typos without false positives on your own user-defined types.
+
+## Usage
+
+```console
+pgqv <filename.sql>
+```
+
+Exactly one file is expected. Running `pgqv` with no arguments prints the usage
+banner and exits non-zero. There are currently no flags, and input is not read
+from stdin.
+
+### Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | No problems found |
+| `1` | Problems found, or the file could not be read or parsed |
+
+This makes `pgqv` straightforward to wire into a pre-commit hook or CI step.
+
+## Installation
+
+### Prebuilt binaries
+
+Prebuilt binaries are attached to each
+[release](https://github.com/serhii-chechun/pg-query-validate/releases/latest).
+They need no compiler and no other dependencies.
+
+1. Open the Releases page and download the archive for your operating system and
+   architecture (macOS or Linux, `amd64` or `arm64`).
+2. Extract the archive and put the binary on your `PATH`:
+
+   ```console
+   $ tar -xzf <downloaded-archive>
+   $ sudo install -m 755 pgqv /usr/local/bin/pgqv
+   ```
+
+3. Confirm it runs:
+
+   ```console
+   $ pgqv
+   PostgreSQL Query Validator v1.0 (c) 2026, Serhii Chechun
+   Usage: pgqv <filename.sql>
+   ```
+
+On macOS you may need to allow the unsigned binary under
+*System Settings -> Privacy & Security* the first time you run it. Building from
+source (below) avoids that.
+
+### With `go install`
+
+```console
+go install github.com/serhii-chechun/pg-query-validate/cmd/pgqv@v1.0.0
+```
+
+The binary is placed in `$(go env GOPATH)/bin` (usually `~/go/bin`), which must
+be on your `PATH`.
+
+This requires **Go 1.27.1 or newer** and **a C compiler**, because the parser is
+built with cgo. See [Build notes](#build-notes).
+
+### From source
+
+```console
+git clone https://github.com/serhii-chechun/pg-query-validate.git
+cd pg-query-validate
+go build -o pgqv ./cmd/pgqv
+```
+
+## Build notes
+
+`pgqv` embeds the PostgreSQL query parser (libpg_query) as C code, so building
+has two consequences:
+
+- **A C compiler is required.** cgo cannot be disabled: `CGO_ENABLED=0` fails,
+  because the parser has no pure-Go implementation. On macOS install the Xcode
+  Command Line Tools; on Debian/Ubuntu `build-essential`; on Alpine `build-base`.
+- **The first build is slow.** It compiles the bundled PostgreSQL C sources and
+  can take a few minutes. Later builds are cached. (use build -x to see the progress)
+
+Cross-compiling needs a C cross-toolchain for the target platform - a plain
+`GOOS=linux go build` from macOS will not work.
+
+The resulting binary is self-contained: it links only against the system C
+library, and needs no PostgreSQL installation or `libpg_query` at runtime.
+Prebuilt release binaries therefore also run on machines without a compiler.
+
+## Limitations
+
+- **PostgreSQL 17 grammar.** Parsing uses libpg_query 17 (via
+  `pg_query_go` v6.2.2). Syntax introduced in PostgreSQL 18 is not recognised
+  yet and will be reported as a syntax error.
+- **No database connection.** Because nothing is resolved against a live
+  catalog, `pgqv` cannot check table or column names, function signatures, or
+  whether a type you define elsewhere actually exists. The type check is
+  deliberately limited to near-misses of built-in type names.
+- **One file per run.** Directories, globs, and multiple arguments are not
+  supported.
+
+## Development
+
+```console
+go test ./...
+gofmt -l ./cmd ./internal
+go vet ./...
+```
+
+## License
+
+Apache License 2.0 - see [LICENSE](LICENSE).
