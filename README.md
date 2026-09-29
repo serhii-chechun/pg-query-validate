@@ -89,18 +89,18 @@ They need no compiler and no other dependencies.
 
 | Platform | Archive |
 | --- | --- |
-| macOS, Apple Silicon | `pgqv_1.0.0_darwin_arm64.tar.gz` |
-| macOS, Intel | `pgqv_1.0.0_darwin_amd64.tar.gz` |
-| Linux, x86-64 | `pgqv_1.0.0_linux_amd64.tar.gz` |
-| Linux, arm64 | `pgqv_1.0.0_linux_arm64.tar.gz` |
-| Windows, x86-64 | `pgqv_1.0.0_windows_amd64.zip` |
+| macOS, Apple Silicon | `pgqv_1.0.1_darwin_arm64.tar.gz` |
+| macOS, Intel | `pgqv_1.0.1_darwin_amd64.tar.gz` |
+| Linux, x86-64 | `pgqv_1.0.1_linux_amd64.tar.gz` |
+| Linux, arm64 | `pgqv_1.0.1_linux_arm64.tar.gz` |
+| Windows, x86-64 | `pgqv_1.0.1_windows_amd64.zip` |
 
 Checksums for every archive are published alongside them in `SHA256SUMS`.
 
 **macOS and Linux**
 
 ```console
-$ tar -xzf pgqv_1.0.0_linux_amd64.tar.gz
+$ tar -xzf pgqv_1.0.1_linux_amd64.tar.gz
 $ sudo install -m 755 pgqv /usr/local/bin/pgqv
 ```
 
@@ -110,7 +110,7 @@ Confirm it runs:
 
 ```console
 $ pgqv
-PostgreSQL Query Validator v1.0 (c) 2026, Serhii Chechun
+PostgreSQL Query Validator v1.0.1 (c) 2026, Serhii Chechun
 Usage: pgqv <filename.sql>
 ```
 
@@ -121,7 +121,7 @@ source (below) avoids that.
 ### With `go install`
 
 ```console
-go install github.com/serhii-chechun/pg-query-validate/cmd/pgqv@v1.0.0
+go install github.com/serhii-chechun/pg-query-validate/cmd/pgqv@v1.0.1
 ```
 
 The binary is placed in `$(go env GOPATH)/bin` (usually `~/go/bin`), which must

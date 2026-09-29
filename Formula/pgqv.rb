@@ -17,25 +17,25 @@ class Pgqv < Formula
 
   on_macos do
     on_arm do
-      url "https://github.com/serhii-chechun/pg-query-validate/releases/download/v1.0.0/pgqv_1.0.0_darwin_arm64.tar.gz"
-      sha256 "6d06c7da76b7d49c7e143609d8907658392a57e55aaa3839641ecbcbfaade3da"
+      url "https://github.com/serhii-chechun/pg-query-validate/releases/download/v1.0.1/pgqv_1.0.1_darwin_arm64.tar.gz"
+      sha256 "c9410a8f2c40dce9290933742a48df29f181601991bf002b94452c70af3caea2"
     end
 
     on_intel do
-      url "https://github.com/serhii-chechun/pg-query-validate/releases/download/v1.0.0/pgqv_1.0.0_darwin_amd64.tar.gz"
-      sha256 "4c79b9825068743e816a89c131929167ff3ae58d1189fe37d55d4aaf33b2b6a7"
+      url "https://github.com/serhii-chechun/pg-query-validate/releases/download/v1.0.1/pgqv_1.0.1_darwin_amd64.tar.gz"
+      sha256 "df8ce501a8c3de1726be3487085e6daf51816aa26cb94aba5bed20e3390ebd46"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/serhii-chechun/pg-query-validate/releases/download/v1.0.0/pgqv_1.0.0_linux_arm64.tar.gz"
-      sha256 "85b26f2529a722a2694b5c8694ffbf15936d13e4f94c54d87af48b1bcfe0f767"
+      url "https://github.com/serhii-chechun/pg-query-validate/releases/download/v1.0.1/pgqv_1.0.1_linux_arm64.tar.gz"
+      sha256 "151f545eba7a9375dff633fa1874b5b5a6eb7d18f0b0ce7c0657765756c45aef"
     end
 
     on_intel do
-      url "https://github.com/serhii-chechun/pg-query-validate/releases/download/v1.0.0/pgqv_1.0.0_linux_amd64.tar.gz"
-      sha256 "190fa133488afad0a634b08e19f5287c51d8f68cd4b09516c313a18ce51d7ee7"
+      url "https://github.com/serhii-chechun/pg-query-validate/releases/download/v1.0.1/pgqv_1.0.1_linux_amd64.tar.gz"
+      sha256 "fdf217f7d098297ce797013c3f250ad9da42c3e2cb4bcdf7f8630e959fc12169"
     end
   end
 

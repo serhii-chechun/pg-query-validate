@@ -12,7 +12,7 @@ func main() {
 	if len(os.Args) < 2 {
 		fmt.Fprintf(os.Stderr,
 			`
-PostgreSQL Query Validator v1.0 (c) 2026, Serhii Chechun
+PostgreSQL Query Validator v1.0.1 (c) 2026, Serhii Chechun
 Usage: pgqv <filename.sql>
 
 `)
