@@ -25,6 +25,23 @@ error: unknown type "varchat" (did you mean "varchar"?)
   are one edit away from a built-in type (`varchat` -> `varchar`), which catches
   typos without false positives on your own user-defined types.
 
+### Meta commands
+
+psql treats an unquoted backslash as the start of a meta-command (`\echo`,
+`\@echo`, `\i`, ...) and consumes input through the end of that line, so a
+meta-command may follow SQL on the same line (`select 1; \echo done`).
+
+These are not SQL and would otherwise be reported as syntax errors, so `pgqv`
+blanks the command text before parsing and validates only the surrounding SQL.
+A backslash inside a string, quoted identifier, dollar-quoted body, or comment
+does not start a meta-command and is left alone. Meta commands are recognised,
+not executed, and the source is only blanked in memory, so the line and column
+numbers in diagnostics still refer to the original file.
+
+psql's `\;` and `\:` escapes are honoured: the backslash is dropped and the
+`;` or `:` it protects is kept. Multi-line meta-command continuation (a line
+ending in a backslash) is not handled.
+
 ## Usage
 
 ```console
@@ -87,7 +104,7 @@ $ tar -xzf pgqv_1.0.0_linux_amd64.tar.gz
 $ sudo install -m 755 pgqv /usr/local/bin/pgqv
 ```
 
-**Windows** — extract the `.zip` and put `pgqv.exe` on your `PATH`.
+**Windows** - extract the `.zip` and put `pgqv.exe` on your `PATH`.
 
 Confirm it runs:
 

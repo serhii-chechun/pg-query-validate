@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/serhii-chechun/pg-query-validate/internal/diagnostic"
+	"github.com/serhii-chechun/pg-query-validate/internal/meta"
 
 	pgq "github.com/pganalyze/pg_query_go/v6"
 )
@@ -165,5 +166,72 @@ func TestWriteDiagnosticsWithoutSourceSpan(t *testing.T) {
 	diagnostic.Write(&out, "m.sql", nil, []diagnostic.Results{{Message: "statement 1: missing statement", Offset: -1}})
 	if want := "error: statement 1: missing statement\n"; out.String() != want {
 		t.Errorf("rendered = %q, want %q", out.String(), want)
+	}
+}
+
+// TestValidateWithMetaCommands parses masked source and checks that a typo in
+// the surrounding SQL is still reported, with an offset that refers to the
+// original (unmasked) source.
+func TestValidateWithMetaCommands(t *testing.T) {
+	src := "\\echo building schema\ncreate table t (name VARCHAT(255));\n"
+	masked := meta.Mask([]byte(src))
+	tree, err := pgq.Parse(string(masked))
+	if err != nil {
+		t.Fatalf("parse masked source: %v", err)
+	}
+
+	diags := validate(tree, []byte(src))
+	if len(diags) != 1 {
+		t.Fatalf("got %d findings, want 1: %v", len(diags), diags)
+	}
+
+	wantOffset := strings.Index(src, "VARCHAT")
+	if diags[0].Offset != wantOffset || diags[0].Length != 7 {
+		t.Errorf("span = (%d, %d), want (%d, 7)", diags[0].Offset, diags[0].Length, wantOffset)
+	}
+
+	var out strings.Builder
+	diagnostic.Write(&out, "m.sql", []byte(src), diags)
+	if want := " --> m.sql:2:22\n"; !strings.Contains(out.String(), want) {
+		t.Errorf("rendered diagnostics missing %q\n got:\n%s", want, out.String())
+	}
+}
+
+// TestValidateMetaOnlyFile confirms a file of nothing but meta commands parses
+// cleanly and produces no findings.
+func TestValidateMetaOnlyFile(t *testing.T) {
+	src := "\\echo one\n\\@echo two\n"
+	tree, err := pgq.Parse(string(meta.Mask([]byte(src))))
+	if err != nil {
+		t.Fatalf("parse meta-only source: %v", err)
+	}
+	if diags := validate(tree, []byte(src)); len(diags) != 0 {
+		t.Errorf("validate returned findings for meta-only source: %v", diags)
+	}
+}
+
+// TestValidateMetaCommandSharesLineWithSQL covers a meta-command following SQL
+// on the same line, e.g. "select 1; \echo done".
+func TestValidateMetaCommandSharesLineWithSQL(t *testing.T) {
+	src := "select 1; \\echo done\ncreate table t (name VARCHAT(255));\n"
+	tree, err := pgq.Parse(string(meta.Mask([]byte(src))))
+	if err != nil {
+		t.Fatalf("parse masked source: %v", err)
+	}
+
+	diags := validate(tree, []byte(src))
+	if len(diags) != 1 {
+		t.Fatalf("got %d findings, want 1: %v", len(diags), diags)
+	}
+
+	wantOffset := strings.Index(src, "VARCHAT")
+	if diags[0].Offset != wantOffset {
+		t.Errorf("offset = %d, want %d", diags[0].Offset, wantOffset)
+	}
+
+	var out strings.Builder
+	diagnostic.Write(&out, "m.sql", []byte(src), diags)
+	if want := " --> m.sql:2:22\n"; !strings.Contains(out.String(), want) {
+		t.Errorf("rendered diagnostics missing %q\n got:\n%s", want, out.String())
 	}
 }

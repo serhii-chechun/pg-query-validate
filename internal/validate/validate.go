@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/serhii-chechun/pg-query-validate/internal/diagnostic"
+	"github.com/serhii-chechun/pg-query-validate/internal/meta"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
 
@@ -27,7 +28,7 @@ func Process(name string, r io.Reader) error {
 		return fmt.Errorf("reading input: %w", err)
 	}
 
-	tree, err := pgq.Parse(string(src))
+	tree, err := pgq.Parse(string(meta.Mask(src)))
 	if err != nil {
 		return fmt.Errorf("PG_SQL parsing: %w", err)
 	}
